@@ -87,7 +87,7 @@ async function runCheck(): Promise<void> {
       }
 
       if (relevant && !product.available) {
-        state.alerted = state.alerted.filter((k) => k !== key);
+        state.alerted = state.alerted.filter((k: string) => k !== key);
       }
     }
   }
