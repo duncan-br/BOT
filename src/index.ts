@@ -3,10 +3,6 @@ import {
   scrapeDreamlandSearch,
   scrapeDreamlandProduct,
 } from "./scrapers/dreamland.js";
-import {
-  scrapeIntertoysSearch,
-  scrapeIntertoysProduct,
-} from "./scrapers/intertoys.js";
 import { sendDiscordNotification, sendDiscordError } from "./notifier.js";
 import { loadState, saveState } from "./state.js";
 import type { Product, ScrapeResult } from "./types.js";
@@ -38,16 +34,11 @@ async function runCheck(): Promise<void> {
 
   for (const term of config.searchTerms) {
     tasks.push(scrapeDreamlandSearch(term));
-    tasks.push(scrapeIntertoysSearch(term));
   }
 
   for (const store of config.stores) {
     for (const url of store.urls) {
-      if (store.name === "Dreamland") {
-        tasks.push(scrapeDreamlandProduct(url));
-      } else if (store.name === "Intertoys") {
-        tasks.push(scrapeIntertoysProduct(url));
-      }
+      tasks.push(scrapeDreamlandProduct(url));
     }
   }
 
@@ -131,7 +122,7 @@ async function main(): Promise<void> {
   console.log("╚══════════════════════════════════════════╝");
   console.log();
   console.log(`Mode: ${mode === "loop" ? "continuous polling" : "single run"}`);
-  console.log(`Monitoring: Intertoys, Dreamland`);
+  console.log(`Monitoring: Dreamland.nl`);
   console.log(`Search terms: ${config.searchTerms.join(", ")}`);
   console.log(
     `Direct URLs: ${config.stores.reduce((n, s) => n + s.urls.length, 0)}`
@@ -142,7 +133,9 @@ async function main(): Promise<void> {
   await runCheck();
 
   if (mode === "loop") {
-    console.log(`\nPolling every ${config.pollIntervalSeconds}s (Ctrl+C to stop)`);
+    console.log(
+      `\nPolling every ${config.pollIntervalSeconds}s (Ctrl+C to stop)`
+    );
     setInterval(runCheck, config.pollIntervalSeconds * 1000);
   }
 }

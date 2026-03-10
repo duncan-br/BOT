@@ -1,6 +1,8 @@
 import * as cheerio from "cheerio";
 import type { Product, ScrapeResult } from "../types.js";
 
+const BASE_URL = "https://www.dreamland.nl";
+
 const HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -14,13 +16,13 @@ function parseAvailability(text: string): {
   status: string;
 } {
   const lower = text.toLowerCase();
-  if (lower.includes("uitverkocht") || lower.includes("épuisé")) {
+  if (lower.includes("uitverkocht")) {
     return { available: false, status: "Out of stock" };
   }
-  if (lower.includes("pre-order") || lower.includes("précommande")) {
+  if (lower.includes("pre-order")) {
     return { available: true, status: "Pre-order" };
   }
-  if (lower.includes("levertijd") || lower.includes("livraison")) {
+  if (lower.includes("levertijd")) {
     return { available: true, status: "In stock" };
   }
   return { available: false, status: "Unknown" };
@@ -29,7 +31,7 @@ function parseAvailability(text: string): {
 export async function scrapeDreamlandSearch(
   query: string
 ): Promise<ScrapeResult> {
-  const url = `https://www.dreamland.be/nl/zoeken?query=${encodeURIComponent(query)}`;
+  const url = `${BASE_URL}/zoeken/producten?q=${encodeURIComponent(query)}`;
   try {
     const res = await fetch(url, { headers: HEADERS });
     if (!res.ok) {
@@ -43,22 +45,24 @@ export async function scrapeDreamlandSearch(
     const $ = cheerio.load(html);
     const products: Product[] = [];
 
-    $("article, .product-card, [data-testid='product-card']").each(
+    $("article, .product-card, [data-testid='product-card'], li").each(
       (_, elem) => {
         const $el = $(elem);
-        const name =
-          $el.find("h2, h3, .product-card__title, .product-title").first().text().trim();
-        const link = $el.find("a[href]").first().attr("href");
-        const price =
-          $el.find(".product-card__price, .price, [data-testid='price']").first().text().trim() ||
-          null;
+        const name = $el
+          .find("h2, h3, .product-card__title, .product-title")
+          .first()
+          .text()
+          .trim();
+        const link = $el.find("a[href*='/producten/']").first().attr("href");
+        const priceText = $el.text().match(/€\s*[\d,.]+/);
+        const price = priceText ? priceText[0] : null;
         const statusText = $el.text();
         const { available, status } = parseAvailability(statusText);
 
         if (name && link) {
           const fullUrl = link.startsWith("http")
             ? link
-            : `https://www.dreamland.be${link}`;
+            : `${BASE_URL}${link}`;
           products.push({
             name,
             price,
@@ -97,8 +101,8 @@ export async function scrapeDreamlandProduct(
     const $ = cheerio.load(html);
 
     const name = $("h1").first().text().trim();
-    const price =
-      $(".product-detail__price, .price").first().text().trim() || null;
+    const priceText = $("body").text().match(/€\s*[\d,.]+/);
+    const price = priceText ? priceText[0] : null;
     const bodyText = $("body").text();
     const { available, status } = parseAvailability(bodyText);
 
@@ -106,12 +110,23 @@ export async function scrapeDreamlandProduct(
       return {
         store: "Dreamland",
         products: [
-          { name, price, url: productUrl, available, store: "Dreamland", status },
+          {
+            name,
+            price,
+            url: productUrl,
+            available,
+            store: "Dreamland",
+            status,
+          },
         ],
       };
     }
 
-    return { store: "Dreamland", products: [], error: "Could not parse product page" };
+    return {
+      store: "Dreamland",
+      products: [],
+      error: "Could not parse product page",
+    };
   } catch (err) {
     return {
       store: "Dreamland",

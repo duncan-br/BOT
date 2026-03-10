@@ -22,19 +22,10 @@ export function loadConfig(): Config {
         name: "Dreamland",
         enabled: true,
         urls: [
-          "https://www.dreamland.be/nl/producten/pokemon-mega-evolution-ascended-heroes-elite-trainer-box-uk/02344072",
-          "https://www.dreamland.be/fr/produits/pokemon-heros-transcendants-elite-trainer-box-fr/02344072",
+          "https://www.dreamland.nl/producten/pokemon-me-2-5-ascended-heroes-elite-trainer-box-uk/02344089",
         ],
       },
-      {
-        name: "Intertoys",
-        enabled: true,
-        urls: [],
-      },
     ],
-    searchTerms: [
-      "ascended heroes elite trainer box",
-      "ascended heroes etb",
-    ],
+    searchTerms: ["Pokemon TCG"],
   };
 }
